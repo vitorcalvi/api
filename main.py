@@ -108,5 +108,5 @@ async def analyze_stress(
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 7860))  # Use the PORT environment variable for Render compatibility
+    port = int(os.getenv("PORT", 8000))  # Use the PORT environment variable for Render compatibility
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
