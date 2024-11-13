@@ -1,5 +1,3 @@
-# main.py
-
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -8,8 +6,6 @@ import numpy as np
 import tempfile
 import os
 import warnings
-import re
-import matplotlib.pyplot as plt
 
 warnings.filterwarnings("ignore", category=UserWarning, module='librosa')
 
@@ -51,16 +47,12 @@ def analyze_voice_stress(audio_file_path):
     return {"stress_level": stress_level, "category": stress_category, "gender": gender}
 
 def analyze_text_stress(text: str):
-    # Placeholder text stress analysis
     stress_keywords = ["anxious", "nervous", "stress", "panic", "tense"]
     stress_score = sum([1 for word in stress_keywords if word in text.lower()])
-    
-    # Normalize the score for a basic assessment
     stress_level = min(stress_score * 20, 100)
     categories = ["Very Low Stress", "Low Stress", "Moderate Stress", "High Stress", "Very High Stress"]
     category_idx = min(int(stress_level / 20), 4)
     stress_category = categories[category_idx]
-    
     return {"stress_level": stress_level, "category": stress_category}
 
 class StressResponse(BaseModel):
@@ -80,14 +72,14 @@ async def analyze_stress(
     # Handle audio file analysis
     if file or file_path:
         if file:
-            if not file.filename.endswith(".wav"):
-                raise HTTPException(status_code=400, detail="Only .wav files are supported.")
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+            if not file.filename.endswith(".opus"):
+                raise HTTPException(status_code=400, detail="Only .opus files are supported.")
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".opus") as temp_file:
                 temp_file.write(await file.read())
                 temp_file_path = temp_file.name
         else:
-            if not file_path.endswith(".wav"):
-                raise HTTPException(status_code=400, detail="Only .wav files are supported.")
+            if not file_path.endswith(".opus"):
+                raise HTTPException(status_code=400, detail="Only .opus files are supported.")
             if not os.path.exists(file_path):
                 raise HTTPException(status_code=400, detail="File path does not exist.")
             temp_file_path = file_path
