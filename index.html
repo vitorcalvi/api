@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secure Portal</title>
+
+    <!-- Your existing styles remain the same -->
+    <style>
+      /* All your existing CSS styles */
+    </style>
+  </head>
+  <body>
+    <!-- Your existing HTML structure remains the same -->
+
+    <!-- Fixed authentication script -->
+    <script>
+      // Clerk configuration - Use the publishable key, not frontend API URL
+      const CLERK_PUBLISHABLE_KEY =
+        'pk_test_c3Ryb25nLXN0aW5rYnVnLTkxLmNsZXJrLmFjY291bnRzLmRldiQ'; // From search results
+
+      let clerk;
+
+      async function initializeClerk() {
+        try {
+          // Load Clerk SDK dynamically
+          const script = document.createElement('script');
+          script.src =
+            'https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js';
+
+          await new Promise((resolve, reject) => {
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+
+          // Wait for Clerk to be available
+          while (!window.Clerk) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+
+          // Initialize Clerk
+          clerk = window.Clerk;
+          await clerk.load({
+            publishableKey: CLERK_PUBLISHABLE_KEY
+          });
+
+          // Check authentication status
+          if (!clerk.user) {
+            showAuthModal();
+            return;
+          }
+
+          // User is authenticated, update the page
+          updatePageForAuthenticatedUser(clerk.user);
+        } catch (error) {
+          console.error('Failed to initialize Clerk:', error);
+          showErrorMessage(
+            'Authentication system failed to load. Please refresh the page.'
+          );
+        }
+      }
+
+      function showAuthModal() {
+        // Create overlay for authentication
+        const overlay = document.createElement('div');
+        overlay.id = 'auth-overlay';
+        overlay.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+        `;
+
+        const authContainer = document.createElement('div');
+        authContainer.style.cssText = `
+          background: white;
+          padding: 40px;
+          border-radius: 15px;
+          text-align: center;
+          max-width: 400px;
+          width: 90%;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        `;
+
+        // Start with sign-in form
+        showSignInForm(authContainer);
+        overlay.appendChild(authContainer);
+        document.body.appendChild(overlay);
+
+        // Listen for successful authentication
+        clerk.addListener('user.updated', user => {
+          if (user) {
+            const existingOverlay = document.getElementById('auth-overlay');
+            if (existingOverlay) {
+              document.body.removeChild(existingOverlay);
+            }
+            updatePageForAuthenticatedUser(user);
+          }
+        });
+      }
+
+      function showSignInForm(container) {
+        container.innerHTML = `
+          <h2 style="margin-bottom: 20px; color: #4a5568;">🔐 Authentication Required</h2>
+          <p style="margin-bottom: 30px; color: #718096;">Please sign in to access the Speech Stress Analysis tool.</p>
+          <div id="clerk-signin"></div>
+          <div style="margin-top: 20px;">
+            <span style="color: #718096;">Don't have an account? </span>
+            <button id="switch-to-signup" style="background: none; border: none; color: #667eea; cursor: pointer; text-decoration: underline;">
+              Sign up here
+            </button>
+          </div>
+        `;
+
+        // Mount sign-in component
+        setTimeout(() => {
+          const signInDiv = document.getElementById('clerk-signin');
+          if (signInDiv) {
+            clerk.mountSignIn(signInDiv);
+          }
+        }, 100);
+
+        // Handle switch to sign up
+        const switchButton = document.getElementById('switch-to-signup');
+        if (switchButton) {
+          switchButton.onclick = () => showSignUpForm(container);
+        }
+      }
+
+      function showSignUpForm(container) {
+        container.innerHTML = `
+          <h2 style="margin-bottom: 20px; color: #4a5568;">✨ Create Account</h2>
+          <p style="margin-bottom: 30px; color: #718096;">Join us to start analyzing speech stress patterns.</p>
+          <div id="clerk-signup"></div>
+          <div style="margin-top: 20px;">
+            <span style="color: #718096;">Already have an account? </span>
+            <button id="switch-to-signin" style="background: none; border: none; color: #667eea; cursor: pointer; text-decoration: underline;">
+              Sign in here
+            </button>
+          </div>
+        `;
+
+        // Mount sign-up component
+        setTimeout(() => {
+          const signUpDiv = document.getElementById('clerk-signup');
+          if (signUpDiv) {
+            clerk.mountSignUp(signUpDiv);
+          }
+        }, 100);
+
+        // Handle switch back to sign in
+        const switchButton = document.getElementById('switch-to-signin');
+        if (switchButton) {
+          switchButton.onclick = () => showSignInForm(container);
+        }
+      }
+
+      function updatePageForAuthenticatedUser(user) {
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', () =>
+            addUserInterface(user)
+          );
+        } else {
+          addUserInterface(user);
+        }
+      }
+
+      function addUserInterface(user) {
+        // Update the page title to include user name
+        const titleElement = document.querySelector('h1');
+        if (titleElement) {
+          const originalTitle = titleElement.textContent;
+          titleElement.textContent = `${originalTitle} - Welcome ${user.firstName}!`;
+        }
+
+        // Add user info bar
+        const container = document.querySelector('.container');
+        if (container) {
+          const userBar = document.createElement('div');
+          userBar.style.cssText = `
+            background: rgba(102, 126, 234, 0.1);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+          `;
+
+          const avatarStyle = user.imageUrl
+            ? `background-image: url(${user.imageUrl}); background-size: cover; background-position: center;`
+            : `background: #4f46e5; color: white; font-weight: bold;`;
+
+          userBar.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="
+                width: 40px; 
+                height: 40px; 
+                border-radius: 50%; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                ${avatarStyle}
+              ">
+                ${
+                  !user.imageUrl
+                    ? user.firstName?.charAt(0).toUpperCase() || 'U'
+                    : ''
+                }
+              </div>
+              <div>
+                <div style="font-weight: bold; color: #4a5568;">👋 ${
+                  user.firstName || 'User'
+                }</div>
+                <div style="font-size: 0.85em; color: #718096;">${
+                  user.primaryEmailAddress?.emailAddress || 'No email'
+                }</div>
+              </div>
+            </div>
+            <button onclick="signOut()" style="
+              background: #4f46e5; 
+              color: white; 
+              border: none; 
+              padding: 8px 16px; 
+              border-radius: 6px; 
+              cursor: pointer;
+              font-size: 0.9em;
+              transition: background 0.2s;
+            " onmouseover="this.style.background='#4338ca'" onmouseout="this.style.background='#4f46e5'">
+              🚪 Sign Out
+            </button>
+          `;
+
+          container.insertBefore(userBar, container.firstChild);
+        }
+
+        console.log('✅ Authenticated user:', user.firstName);
+      }
+
+      function showErrorMessage(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: #f56565;
+          color: white;
+          padding: 15px 20px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          z-index: 10001;
+          max-width: 300px;
+        `;
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+
+        setTimeout(() => {
+          if (document.body.contains(errorDiv)) {
+            document.body.removeChild(errorDiv);
+          }
+        }, 5000);
+      }
+
+      // Sign out function
+      window.signOut = async function () {
+        try {
+          await clerk.signOut();
+          location.reload();
+        } catch (error) {
+          console.error('Sign out error:', error);
+          showErrorMessage('Failed to sign out. Please try again.');
+        }
+      };
+
+      // Initialize when page loads
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeClerk);
+      } else {
+        initializeClerk();
+      }
+    </script>
+  </body>
+</html>

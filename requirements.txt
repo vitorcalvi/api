@@ -1,0 +1,8 @@
+numpy
+librosa
+torch
+fastapi
+uvicorn
+python-multipart
+soundfile
+websockets

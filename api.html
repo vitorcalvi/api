@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secure Portal</title>
+
+    <!-- Prevent Clerk auto-initialization -->
+    <script>
+      window.__clerk_frontend_api = 'disable-auto-init';
+    </script>
+
+    <!-- Load Clerk from CDN -->
+    <script src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: white;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        margin-bottom: 40px;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+
+      .auth-buttons {
+        display: flex;
+        gap: 15px;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-primary {
+        background: #4f46e5;
+        color: white;
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        opacity: 0.9;
+      }
+
+      .main-content {
+        text-align: center;
+        padding: 60px 20px;
+      }
+
+      .hero-title {
+        font-size: 3rem;
+        margin-bottom: 20px;
+        background: linear-gradient(45deg, #fff, #e0e7ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .hero-subtitle {
+        font-size: 1.2rem;
+        margin-bottom: 40px;
+        opacity: 0.9;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 30px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        margin: 20px auto;
+        max-width: 500px;
+      }
+
+      .user-info {
+        text-align: center;
+      }
+
+      .user-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        margin: 0 auto 20px;
+        background: #4f46e5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: bold;
+      }
+
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+
+      .modal.active {
+        display: flex;
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        width: 90%;
+        max-width: 400px;
+        color: #333;
+        position: relative;
+      }
+
+      .modal-close {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #666;
+      }
+
+      .modal-title {
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 1.5rem;
+        color: #333;
+      }
+
+      .social-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-bottom: 30px;
+      }
+
+      .social-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: white;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .social-btn:hover {
+        background: #f8f9fa;
+        transform: translateY(-1px);
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 16px;
+      }
+
+      .form-input:focus {
+        outline: none;
+        border-color: #4f46e5;
+      }
+
+      .form-submit {
+        width: 100%;
+        padding: 12px;
+        background: #4f46e5;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .form-submit:hover {
+        background: #4338ca;
+      }
+
+      .divider {
+        text-align: center;
+        margin: 20px 0;
+        position: relative;
+        color: #666;
+      }
+
+      .divider::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: #ddd;
+      }
+
+      .divider span {
+        background: white;
+        padding: 0 15px;
+        position: relative;
+      }
+
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: white;
+        color: #333;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+        z-index: 1001;
+      }
+
+      .notification.show {
+        transform: translateX(0);
+      }
+
+      .notification.success {
+        border-left: 4px solid #22c55e;
+      }
+
+      .notification.error {
+        border-left: 4px solid #ef4444;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .hero-title {
+          font-size: 2rem;
+        }
+        .modal-content {
+          margin: 20px;
+          width: calc(100% - 40px);
+          padding: 30px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <header class="header">
+        <div class="logo">🔐 Secure Portal</div>
+
+        <!-- Guest Navigation -->
+        <div id="guest-nav" class="auth-buttons">
+          <button class="btn btn-secondary" onclick="openModal('signin')">
+            🔑 Sign In
+          </button>
+          <button class="btn btn-primary" onclick="openModal('signup')">
+            ✨ Sign Up
+          </button>
+        </div>
+
+        <!-- User Navigation -->
+        <div id="user-nav" class="auth-buttons hidden">
+          <span id="user-greeting">Hello, User!</span>
+          <button class="btn btn-secondary" onclick="handleSignOut()">
+            👋 Sign Out
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Guest Content -->
+        <div id="guest-content">
+          <h1 class="hero-title">Welcome to Your Secure Portal</h1>
+          <p class="hero-subtitle">
+            Access your applications with enterprise-grade security. Sign in
+            with Google, GitHub, or create an account to get started.
+          </p>
+          <button
+            class="btn btn-primary"
+            onclick="openModal('signin')"
+            style="font-size: 1.1rem; padding: 15px 30px"
+          >
+            🚀 Get Started
+          </button>
+        </div>
+
+        <!-- User Content -->
+        <div id="user-content" class="hidden">
+          <h1 class="hero-title">Welcome Back!</h1>
+          <div class="card user-info">
+            <div id="user-avatar" class="user-avatar">U</div>
+            <h3 id="user-name">Loading...</h3>
+            <p id="user-email">user@example.com</p>
+            <p style="margin-top: 15px; opacity: 0.8">
+              ✅ Authentication verified • Access granted
+            </p>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-bottom: 20px">🎙️ Speech Stress Analyzer</h3>
+            <p style="margin-bottom: 20px; opacity: 0.9">
+              AI-powered speech analysis with real-time emotion detection
+            </p>
+            <button class="btn btn-primary" onclick="openSpeechAnalyzer()">
+              Launch Application
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div id="auth-modal" class="modal">
+      <div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <h2 class="modal-title" id="modal-title">Sign In</h2>
+
+        <!-- Social Login -->
+        <div class="social-buttons">
+          <button class="social-btn" onclick="handleSocialAuth('oauth_google')">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+            Continue with Google
+          </button>
+
+          <button class="social-btn" onclick="handleSocialAuth('oauth_github')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+              />
+            </svg>
+            Continue with GitHub
+          </button>
+        </div>
+
+        <div class="divider">
+          <span>or</span>
+        </div>
+
+        <!-- Email Form -->
+        <form id="auth-form" onsubmit="handleEmailAuth(event)">
+          <div class="form-group">
+            <label class="form-label" for="email">Email</label>
+            <input class="form-input" type="email" id="email" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <input class="form-input" type="password" id="password" required />
+          </div>
+          <button type="submit" class="form-submit" id="submit-btn">
+            <span id="submit-text">Sign In</span>
+            <span id="submit-loading" class="loading hidden"></span>
+          </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px; color: #666">
+          <span id="switch-text">Don't have an account?</span>
+          <a
+            href="#"
+            onclick="switchMode()"
+            style="color: #4f46e5; text-decoration: none; font-weight: 500"
+          >
+            <span id="switch-link">Sign up</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Global variables
+      let clerk = null;
+      let currentMode = 'signin';
+      let isInitialized = false;
+
+      // Configuration
+      const CLERK_CONFIG = {
+        publishableKey: null,
+        fallbackKey: 'pk_test_your_actual_publishable_key_here' // Replace with your actual key
+      };
+
+      // Initialize on page load
+      document.addEventListener('DOMContentLoaded', async () => {
+        console.log('🚀 Initializing Secure Portal...');
+        await initializeApp();
+      });
+
+      // Load configuration
+      async function loadConfig() {
+        try {
+          console.log('📡 Loading configuration...');
+          const response = await fetch('./config.json');
+
+          if (response.ok) {
+            const config = await response.json();
+            CLERK_CONFIG.publishableKey = config.clerkPublishableKey;
+            console.log('✅ Configuration loaded from file');
+            return CLERK_CONFIG.publishableKey;
+          }
+        } catch (error) {
+          console.log('⚠️ Config file not found, using fallback');
+        }
+
+        // Use fallback key
+        CLERK_CONFIG.publishableKey = CLERK_CONFIG.fallbackKey;
+        return CLERK_CONFIG.publishableKey;
+      }
+
+      // Initialize application
+      async function initializeApp() {
+        try {
+          // Load config
+          const publishableKey = await loadConfig();
+
+          if (!publishableKey || !publishableKey.startsWith('pk_')) {
+            throw new Error(
+              'Invalid publishable key. Please check your configuration.'
+            );
+          }
+
+          // Wait for Clerk to be available
+          console.log('⏳ Waiting for Clerk to load...');
+          await waitForClerk();
+
+          // Initialize Clerk
+          console.log('🔧 Initializing Clerk...');
+          clerk = new window.Clerk(publishableKey);
+          await clerk.load();
+
+          console.log('✅ Clerk initialized successfully');
+          isInitialized = true;
+
+          // Check auth state
+          if (clerk.user) {
+            showUserContent();
+            showNotification(
+              `Welcome back, ${clerk.user.firstName || 'User'}!`,
+              'success'
+            );
+          } else {
+            showGuestContent();
+          }
+        } catch (error) {
+          console.error('❌ Initialization failed:', error);
+          showNotification(
+            'Authentication system failed to initialize. Please refresh the page.',
+            'error'
+          );
+          showGuestContent();
+        }
+      }
+
+      // Wait for Clerk to be available
+      function waitForClerk() {
+        return new Promise((resolve, reject) => {
+          if (window.Clerk) {
+            resolve();
+            return;
+          }
+
+          let attempts = 0;
+          const maxAttempts = 50;
+
+          const checkClerk = () => {
+            attempts++;
+            if (window.Clerk) {
+              resolve();
+            } else if (attempts >= maxAttempts) {
+              reject(new Error('Clerk failed to load'));
+            } else {
+              setTimeout(checkClerk, 100);
+            }
+          };
+
+          checkClerk();
+        });
+      }
+
+      // UI Functions
+      function showGuestContent() {
+        document.getElementById('guest-nav').classList.remove('hidden');
+        document.getElementById('user-nav').classList.add('hidden');
+        document.getElementById('guest-content').classList.remove('hidden');
+        document.getElementById('user-content').classList.add('hidden');
+      }
+
+      function showUserContent() {
+        document.getElementById('guest-nav').classList.add('hidden');
+        document.getElementById('user-nav').classList.remove('hidden');
+        document.getElementById('guest-content').classList.add('hidden');
+        document.getElementById('user-content').classList.remove('hidden');
+
+        // Update user info
+        if (clerk && clerk.user) {
+          const firstName = clerk.user.firstName || 'User';
+          const email =
+            clerk.user.primaryEmailAddress?.emailAddress || 'No email';
+
+          document.getElementById(
+            'user-greeting'
+          ).textContent = `Hello, ${firstName}!`;
+          document.getElementById('user-name').textContent = firstName;
+          document.getElementById('user-email').textContent = email;
+          document.getElementById('user-avatar').textContent = firstName
+            .charAt(0)
+            .toUpperCase();
+        }
+      }
+
+      // Modal functions
+      function openModal(mode) {
+        currentMode = mode;
+        updateModalContent();
+        document.getElementById('auth-modal').classList.add('active');
+      }
+
+      function closeModal() {
+        document.getElementById('auth-modal').classList.remove('active');
+        document.getElementById('auth-form').reset();
+        hideLoading();
+      }
+
+      function switchMode() {
+        currentMode = currentMode === 'signin' ? 'signup' : 'signin';
+        updateModalContent();
+      }
+
+      function updateModalContent() {
+        const title = document.getElementById('modal-title');
+        const submitText = document.getElementById('submit-text');
+        const switchText = document.getElementById('switch-text');
+        const switchLink = document.getElementById('switch-link');
+
+        if (currentMode === 'signin') {
+          title.textContent = 'Sign In';
+          submitText.textContent = 'Sign In';
+          switchText.textContent = "Don't have an account?";
+          switchLink.textContent = 'Sign up';
+        } else {
+          title.textContent = 'Sign Up';
+          submitText.textContent = 'Sign Up';
+          switchText.textContent = 'Already have an account?';
+          switchLink.textContent = 'Sign in';
+        }
+      }
+
+      // Authentication functions
+      async function handleSocialAuth(provider) {
+        if (!isInitialized) {
+          showNotification(
+            'Authentication system not ready. Please wait.',
+            'error'
+          );
+          return;
+        }
+
+        try {
+          console.log(`🔄 Starting ${provider} authentication...`);
+          showNotification(
+            `Redirecting to ${provider.replace('oauth_', '')}...`,
+            'success'
+          );
+
+          await clerk.authenticateWithRedirect({
+            strategy: provider,
+            redirectUrl: window.location.href,
+            redirectUrlComplete: window.location.href
+          });
+        } catch (error) {
+          console.error('❌ Social auth error:', error);
+          showNotification(
+            `Failed to sign in with ${provider.replace('oauth_', '')}`,
+            'error'
+          );
+        }
+      }
+
+      async function handleEmailAuth(event) {
+        event.preventDefault();
+
+        if (!isInitialized) {
+          showNotification(
+            'Authentication system not ready. Please wait.',
+            'error'
+          );
+          return;
+        }
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        showLoading();
+
+        try {
+          if (currentMode === 'signin') {
+            await clerk.client.signIn.create({
+              identifier: email,
+              password: password
+            });
+          } else {
+            await clerk.client.signUp.create({
+              emailAddress: email,
+              password: password
+            });
+          }
+
+          closeModal();
+          showUserContent();
+          showNotification(
+            currentMode === 'signin'
+              ? 'Welcome back!'
+              : 'Account created successfully!',
+            'success'
+          );
+        } catch (error) {
+          console.error('❌ Email auth error:', error);
+          showNotification(
+            'Authentication failed. Please check your credentials.',
+            'error'
+          );
+        } finally {
+          hideLoading();
+        }
+      }
+
+      async function handleSignOut() {
+        if (!clerk) return;
+
+        try {
+          await clerk.signOut();
+          showGuestContent();
+          showNotification('Successfully signed out!', 'success');
+        } catch (error) {
+          console.error('❌ Sign out error:', error);
+          showNotification('Error signing out. Please try again.', 'error');
+        }
+      }
+
+      // App functions
+      function openSpeechAnalyzer() {
+        if (!clerk || !clerk.user) {
+          showNotification('Please sign in to access the application', 'error');
+          openModal('signin');
+          return;
+        }
+
+        // Store auth data
+        localStorage.setItem(
+          'clerk_auth_token',
+          clerk.session?.id || 'authenticated'
+        );
+        localStorage.setItem(
+          'clerk_user_data',
+          JSON.stringify({
+            id: clerk.user.id,
+            firstName: clerk.user.firstName,
+            email: clerk.user.primaryEmailAddress?.emailAddress
+          })
+        );
+
+        showNotification('Opening Speech Analyzer...', 'success');
+
+        setTimeout(() => {
+          window.open('speech-analyzer.html', '_blank');
+        }, 1000);
+      }
+
+      // Utility functions
+      function showLoading() {
+        document.getElementById('submit-text').classList.add('hidden');
+        document.getElementById('submit-loading').classList.remove('hidden');
+        document.getElementById('submit-btn').disabled = true;
+      }
+
+      function hideLoading() {
+        document.getElementById('submit-text').classList.remove('hidden');
+        document.getElementById('submit-loading').classList.add('hidden');
+        document.getElementById('submit-btn').disabled = false;
+      }
+
+      function showNotification(message, type = 'success') {
+        // Remove existing notifications
+        const existing = document.querySelectorAll('.notification');
+        existing.forEach(n => n.remove());
+
+        // Create new notification
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span>${type === 'success' ? '✅' : '❌'}</span>
+                    <span>${message}</span>
+                </div>
+            `;
+
+        document.body.appendChild(notification);
+
+        // Show and auto-hide
+        setTimeout(() => notification.classList.add('show'), 100);
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => notification.remove(), 300);
+        }, 4000);
+      }
+
+      // Event listeners
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+          closeModal();
+        }
+      });
+
+      document.getElementById('auth-modal').addEventListener('click', e => {
+        if (e.target.id === 'auth-modal') {
+          closeModal();
+        }
+      });
+
+      // Export auth state for other windows
+      window.getAuthState = () => ({
+        isAuthenticated: !!(clerk && clerk.user),
+        user: clerk?.user || null,
+        session: clerk?.session || null
+      });
+
+      console.log('🔐 Secure Portal loaded successfully');
+    </script>
+  </body>
+</html>
